@@ -1,0 +1,59 @@
+ROUTINE AOC2302 [Type=INT]
+AOC2302 ;Advent of Code 2023 - Day 2
+
+LOAD(filename,data)
+    n file,sc
+    s file=##class(%File).%New(filename)
+    s sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .N line,game,detail
+    .S line=file.ReadLine()
+    .Q:line=""
+    .S game=$P($P(line,":",1)," ",2)
+    .S detail=$P(line,":",2)
+    .F subgame=1:1:$L(detail,";") D
+    ..N totals,colour,gamecols,col
+    ..S gamecols=$ZSTRIP($P(detail,";",subgame),"<>W") 
+    ..F col=1:1:$L(gamecols,",") D
+    ...N colpair,colname,colcount,colpos
+    ...S colpair=$ZSTRIP($P(gamecols,",",col),"<>W")
+    ...S colcount=$P(colpair," ",1)
+    ...S colname=$P(colpair," ",2)
+    ...S colpos=$S($E(colname,1)="b":3,$E(colname,1)="g":2,1:1)
+    ...S $P(data(game,subgame),"`",colpos)=colcount
+    Q
+
+TASK1(TEST)
+    N filename,data,sum
+    S filename="/external/AOC23-02-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0
+    N game,subgame S (game,subgame)=""
+    F  S game=$O(data(game)) Q:game=""  D
+    .S data(game)="Possible"
+    .F  S subgame=$O(data(game,subgame)) Q:subgame=""!(subgame=999)  D
+    ..S max="12`13`14" ;r`g`b
+    ..F x=1:1:3 D
+    ...Q:+$P(data(game,subgame),"`",x)'>+$P(max,"`",x) 
+    ...S data(game)="Impossible"
+    .I data(game)="Possible" s sum=sum+game
+    W "Sum is: "_sum,!
+    Q
+
+TASK2(TEST)
+    N filename,data,sum
+    S filename="/external/AOC23-02-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0
+    N game,subgame S (game,subgame)=""
+    F  S game=$O(data(game)) Q:game=""  D
+    .S data(game)="0`0`0"
+    .F  S subgame=$O(data(game,subgame)) Q:subgame=""!(subgame=999)  D
+    ..F x=1:1:3 D
+    ...Q:+$P(data(game,subgame),"`",x)'>+$P(data(game),"`",x) 
+    ...S $P(data(game),"`",x)=+$P(data(game,subgame),"`",x)
+    .n power
+    .s power=$P(data(game),"`",1)*$P(data(game),"`",2)*$P(data(game),"`",3)
+    .s sum=sum+power
+    W "Sum is: "_sum,!
+    Q
