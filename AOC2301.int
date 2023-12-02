@@ -1,0 +1,52 @@
+ROUTINE AOC2301 [Type=INT]
+AOC2301 ;Advent of Code 2023 - Day 1
+
+LOAD(filename,data) ;Generic function to read in a file to a local memory array.
+    n file,sc
+    s file=##class(%File).%New(filename)
+    s sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .S i=$I(data)
+    .S data(i)=file.ReadLine()
+    .Q
+    Q
+
+TASK1(TEST) ;Task 1 solution, 1 for test, 0 for actual
+    N filename,data,line,resp,sum
+    S filename="/external/AOC23-01-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0
+    F x=1:1:data D
+    .Q:data(x)=""
+    .S line=$ZSTRIP(data(x),"*ACP") ;("*ACP" means remove letter, control chars and punctuation
+    .S resp=$E(line,1)_$E(line,$L(line)) W:TEST resp,!
+    .S sum=sum+resp
+    W "Sum is "_sum,!
+    Q
+
+TASK2(TEST) ;Task 2 solution, 1 for test, 0 for actual
+    N filename,data,line,resp,sum
+    S filename="/external/AOC23-01-"_$S(TEST:"T2",1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0 
+    F x=1:1:data D
+    .Q:data(x)=""
+    .S line=$$TXT2N(data(x))
+    .S resp=$E(line,1)_$E(line,$L(line)) W:TEST resp,!
+    .S sum=sum+resp
+    W "Sum is "_sum,!
+    Q
+
+TXT2N(line) ;Function to convert numbers as words to numbers only
+    ;Yes, it's a bit of hack (e.g. eightwothree = 823), but we're going to remove the letters
+    s line=$ZCVT(line,"L")
+    s line=$REPLACE(line,"one","one1one")
+    s line=$REPLACE(line,"two","two2two")
+    s line=$REPLACE(line,"three","three3three")
+    s line=$REPLACE(line,"four","four4four")
+    s line=$REPLACE(line,"five","five5five")
+    s line=$REPLACE(line,"six","six6six")
+    s line=$REPLACE(line,"seven","seven7seven")
+    s line=$REPLACE(line,"eight","eight8eight")
+    s line=$REPLACE(line,"nine","nine9nine")
+    q $ZSTRIP(line,"*ACP")
