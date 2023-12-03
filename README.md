@@ -1,5 +1,5 @@
 # AOC23
-[Advent of Code 2023](https://adventofcode.com/2023), in [InterSystems ObjectScript](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=PAGE_objectscript) (but generally compatible with standard MUMPS, if you add use functions to replace some the built-in Cache/IRIS specific ones).
+[Advent of Code 2023](https://adventofcode.com/2023), in [InterSystems ObjectScript](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=PAGE_objectscript) (but generally compatible with standard MUMPS, if you add and use your own functions to replace some the built-in Cache/IRIS specific ones - e.g. ZSTRIP, ZCONVERT).
 
 I won't always do it on the day it was set for, some days I may skip because I get annoyed, or get distracted by real life!
 
