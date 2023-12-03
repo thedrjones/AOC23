@@ -1,5 +1,5 @@
 ROUTINE AOC2303 [Type=INT]
-AOC2303 ;Advent of Code 2023 - Day 1
+AOC2303 ;Advent of Code 2023 - Day 3
 
 LOAD(filename,data)
     n file,sc
@@ -21,16 +21,16 @@ TASK1(TEST)
     .F sc=1:1:$L(line) D
     ..Q:$E(line,sc)'?.N
     ..N valid,ec,num S valid=0
-    ..F ec=sc:1:$L(line) Q:"1234567890"'[$E(line,ec)
-    ..S:ec<$L(line) ec=ec-1
+    ..F ec=sc:1:$L(line) Q:"1234567890"'[$E(line,ec)    ;Will stop at end of number
+    ..S:ec<$L(line) ec=ec-1                             ;Compensate if EOL
     ..S num=$E(line,sc,ec) 
     ..S valid=0
     ..N sl S sl=$S(sc=1:sc,1:sc-1)          ;start lookup
     ..N el S el=$S(ec=$L(line):ec,1:ec+1)   ;end lookup
-    ..I $TR($E(line,sl),".1234567890")'="" s valid=1                        ;same line, before num 
-    ..I $TR($E(line,el),".1234567890")'="" s valid=2                        ;same line, after num
-    ..I 'valid,i>1,$TR($E(data(i-1),sl,el),".1234567890")'="" S valid=3     ;line above
-    ..I 'valid,i<data,$TR($E(data(i+1),sl,el),".1234567890")'="" S valid=4  ;line below
+    ..I $TR($E(line,sl),".1234567890")'="" s valid=1                        ;same line, char before num 
+    ..I $TR($E(line,el),".1234567890")'="" s valid=2                        ;same line, char after num
+    ..I 'valid,i>1,$TR($E(data(i-1),sl,el),".1234567890")'="" S valid=3     ;any part from line positions above
+    ..I 'valid,i<data,$TR($E(data(i+1),sl,el),".1234567890")'="" S valid=4  ;any part from line positions below
     ..I 'valid S sc=ec Q
     ..S sum=sum+num
     ..S sc=ec
@@ -38,27 +38,35 @@ TASK1(TEST)
     Q
 
 TASK2(TEST)
-    N filename,data,line,i,sc,sum
+    N filename,data,line,nums,i,c
     S filename="/external/AOC23-03-"_$S(TEST:"T1",1:"A")_".txt"
     D LOAD(filename,.data)
     S sum=0
     F i=1:1:data D
     .S line=data(i)
-    .F sc=1:1:$L(line) D
-    ..Q:$E(line,sc)'?.N
-    ..N valid,ec,num S valid=0
-    ..F ec=sc:1:$L(line) Q:"1234567890"'[$E(line,ec)
-    ..S:ec<$L(line) ec=ec-1
-    ..S num=$E(line,sc,ec) 
-    ..S valid=0
-    ..N sl S sl=$S(sc=1:sc,1:sc-1)          ;start lookup
-    ..N el S el=$S(ec=$L(line):ec,1:ec+1)   ;end lookup
-    ..I $TR($E(line,sl),".1234567890")'="" s valid=1                        ;same line, before num 
-    ..I $TR($E(line,el),".1234567890")'="" s valid=2                        ;same line, after num
-    ..I 'valid,i>1,$TR($E(data(i-1),sl,el),".1234567890")'="" S valid=3     ;line above
-    ..I 'valid,i<data,$TR($E(data(i+1),sl,el),".1234567890")'="" S valid=4  ;line below
-    ..I 'valid S sc=ec Q
-    ..S sum=sum+num
-    ..S sc=ec
-    w "Sum is: "_sum
+    .F c=1:1:$L(line) D
+    ..Q:$E(line,c)'="*"
+    ..n ratio
+    ..S ratio=$$FINDNUMS(i,c)
+    ..I ratio>0 S sum=sum+ratio
+    W "Sum is "_sum
     Q
+
+FINDNUMS(i,c)   ;Function to find possible numbers surrounding a position and work out their "ratio"
+    N si,ei,sc,ec,nums
+    S si=$S(i>1:i-1,1:i)            ;look to line above
+    S ei=$S(i<data:i+1,1:i)         ;look to line below
+    S sc=$S(c>1:c-1,1:c)            ;look 1 extra to left
+    S ec=$S(c<$L(data(i)):c+1,1:c)  ;look 1 extra to right
+    F ti=si:1:ei D      
+    .F tc=sc:1:ec D     
+    ..I $E(data(ti),tc)'?.1N Q                      ;We have a candidate number if we've not quit here
+    ..F xc=tc:-1:1 Q:$E(data(ti),xc)'?1N                    ;Now find to before start of that number
+    ..S xc=$S(xc=1&($E(data(ti),1)?1N):xc,xc>0:xc+1,1:xc)   ;Compensate for looking back too far (but if xc=1, check for it being a number)
+    ..F tc=xc:1:$L(line) Q:$E(data(ti),tc)'?.1N             ;Find to the end of the number
+    ..S tc=$S(tc<$L(line):tc-1,1:tc)                        ;Compensate for looking ahead too far
+    ..N number S number=$E(data(ti),xc,tc)          ;Grabs the number
+    ..s nums($I(nums))=number                       ;Stick it in array
+    I $G(nums)<2 Q 0    ;Condition: too few numbers
+    I $G(nums)>2 Q 0    ;Condition: too many numbers
+    Q nums(1)*nums(2)   ;Product of 2 numbers
