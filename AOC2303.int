@@ -1,0 +1,64 @@
+ROUTINE AOC2303 [Type=INT]
+AOC2303 ;Advent of Code 2023 - Day 1
+
+LOAD(filename,data)
+    n file,sc
+    s file=##class(%File).%New(filename)
+    s sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .S i=$I(data)
+    .S data(i)=file.ReadLine()
+    .Q
+    Q
+
+TASK1(TEST)
+    N filename,data,line,i,sc,sum
+    S filename="/external/AOC23-03-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0
+    F i=1:1:data D
+    .S line=data(i)
+    .F sc=1:1:$L(line) D
+    ..Q:$E(line,sc)'?.N
+    ..N valid,ec,num S valid=0
+    ..F ec=sc:1:$L(line) Q:"1234567890"'[$E(line,ec)
+    ..S:ec<$L(line) ec=ec-1
+    ..S num=$E(line,sc,ec) 
+    ..S valid=0
+    ..N sl S sl=$S(sc=1:sc,1:sc-1)          ;start lookup
+    ..N el S el=$S(ec=$L(line):ec,1:ec+1)   ;end lookup
+    ..I $TR($E(line,sl),".1234567890")'="" s valid=1                        ;same line, before num 
+    ..I $TR($E(line,el),".1234567890")'="" s valid=2                        ;same line, after num
+    ..I 'valid,i>1,$TR($E(data(i-1),sl,el),".1234567890")'="" S valid=3     ;line above
+    ..I 'valid,i<data,$TR($E(data(i+1),sl,el),".1234567890")'="" S valid=4  ;line below
+    ..I 'valid S sc=ec Q
+    ..S sum=sum+num
+    ..S sc=ec
+    w "Sum is: "_sum
+    Q
+
+TASK2(TEST)
+    N filename,data,line,i,sc,sum
+    S filename="/external/AOC23-03-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0
+    F i=1:1:data D
+    .S line=data(i)
+    .F sc=1:1:$L(line) D
+    ..Q:$E(line,sc)'?.N
+    ..N valid,ec,num S valid=0
+    ..F ec=sc:1:$L(line) Q:"1234567890"'[$E(line,ec)
+    ..S:ec<$L(line) ec=ec-1
+    ..S num=$E(line,sc,ec) 
+    ..S valid=0
+    ..N sl S sl=$S(sc=1:sc,1:sc-1)          ;start lookup
+    ..N el S el=$S(ec=$L(line):ec,1:ec+1)   ;end lookup
+    ..I $TR($E(line,sl),".1234567890")'="" s valid=1                        ;same line, before num 
+    ..I $TR($E(line,el),".1234567890")'="" s valid=2                        ;same line, after num
+    ..I 'valid,i>1,$TR($E(data(i-1),sl,el),".1234567890")'="" S valid=3     ;line above
+    ..I 'valid,i<data,$TR($E(data(i+1),sl,el),".1234567890")'="" S valid=4  ;line below
+    ..I 'valid S sc=ec Q
+    ..S sum=sum+num
+    ..S sc=ec
+    w "Sum is: "_sum
+    Q
