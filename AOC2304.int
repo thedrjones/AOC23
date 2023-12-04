@@ -1,0 +1,66 @@
+ROUTINE AOC2304 [Type=INT]
+AOC2304 ;;Advent of Code 2023 - Day 4
+
+LOAD(filename,data)
+    n file,sc,i
+    s file=##class(%File).%New(filename)
+    s sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .S i=$I(data)
+    .S data=file.ReadLine()
+    .N cid,oncard,winning,num
+    .S cid=$ZSTRIP($P($P(data,"Card ",2),":",1),"<=>W")
+    .S winning=$ZSTRIP($P($P(data,":",2),"|",1),"<=>W")
+    .F num=1:1:$L(winning," ") D
+    ..N thisnum S thisnum=$P(winning," ",num)
+    ..S:+thisnum>0 data(cid,"winning",thisnum)=""
+    .S oncard=$ZSTRIP($P($P(data,":",2),"|",2),"<=>W")
+    .F num=1:1:$L(oncard," ") D
+    ..N thisnum S thisnum=$P(oncard," ",num)
+    ..S:+thisnum>0 data(cid,"oncard",thisnum)=""
+    Q
+
+TASK1(TEST)
+    N filename,data,sum,cid,num,cwin,cvalue
+    S filename="/external/AOC23-04-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0
+    S cid="" F  S cid=$O(data(cid)) Q:cid=""  D
+    .N cwin,cvalue S (cwin,cvalue)=0
+    .S num="" F  S num=$O(data(cid,"oncard",num)) Q:num=""  D
+    ..Q:'$D(data(cid,"winning",num))
+    ..S cwin=cwin+1
+    .S:cwin>0 cvalue=2**(cwin-1) ;cwin>0 is worth 2 raised to n-1 points
+    .S sum=sum+cvalue
+    W "Sum is: "_sum,!
+    Q
+
+TASK2(TEST)
+    N filename,data,sum,cid,card,tid
+    S filename="/external/AOC23-04-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0
+    S cid="" F  S cid=$O(data(cid)) Q:cid=""  D
+    .D TRIGCARD(cid)
+    S cid="" F  S cid=$O(data(cid)) Q:cid=""  D
+    .D ACCUCARD(cid)
+    W "Sum is: "_sum,!
+    Q
+
+TRIGCARD(cid) ;Builds card result and store the cards triggered
+    N cwin,num,x S (cwin,x)=0
+    S num="" F  S num=$O(data(cid,"oncard",num)) Q:num=""  D
+    .Q:'$D(data(cid,"winning",num))
+    .S cwin=cwin+1
+    F x=1:1:cwin D 
+    .S card(cid,"triggers",cid+x)=""
+    Q
+    
+ACCUCARD(a) ;Recursively accumulates card instance counts
+    N b
+    S card(a,"count")=1+$G(card(a,"count"))
+    S sum=sum+1 ;+1 for initial card
+    Q:'$D(card(a,"triggers"))
+    S b="" F  S b=$O(card(a,"triggers",b)) Q:b=""  D
+    .D ACCUCARD(b)
+    Q
