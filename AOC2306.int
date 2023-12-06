@@ -1,0 +1,40 @@
+ROUTINE AOC2306 [Type=INT]
+AOC2306 ;Advent of Code 2023 - Day 6
+
+LOAD(task,filename,data)
+    N file,sc
+    S file=##class(%File).%New(filename)
+    S sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .N line,mode,i
+    .S line=file.ReadLine()
+    .Q:line=""
+    .I task=1 d
+    ..S mode=$P(line,":",1),line=$ZSTRIP($P(line,":",2),"<=>W")
+    ..F i=1:1:$L(line," ") S data(i,$E(mode))=$P(line," ",i),data=i
+    .I task=2 d ;only difference is hardcoded 1 and stripping filter)
+    ..S mode=$P(line,":",1),line=$ZSTRIP($P(line,":",2),"*W")
+    ..S data(1,$E(mode))=line,data=1
+    Q
+
+TASK(TASK,TEST) ;Tasks today are basically the same.
+    N filename,data,race,total
+    S filename="/external/AOC23-06-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(TASK,filename,.data)
+    S total=1
+    F race=1:1:data D
+    .S result=$$RACE(race)
+    .S total=total*result
+    W "The total is "_total,!
+    Q
+    
+RACE(race) ;Work out the result of all race strategems
+    N T,D,BP,result
+    S T=data(race,"T")
+    S D=data(race,"D")
+    S result=0
+    F BP=1:1:(T-1) D
+    .N timeleft,distdone,fail
+    .S timeleft=T-BP,distdone=timeleft*BP,fail=1
+    .S:distdone>D fail=0,result=result+1 
+    Q result
