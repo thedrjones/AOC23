@@ -1,0 +1,88 @@
+ROUTINE AOC2305 [Type=INT]
+AOC2305 ; Advent of Code 2023 - Day 5
+
+LOAD(TASK,filename,data)
+    n file,sc,line,mode
+    s file=##class(%File).%New(filename)
+    s sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .S line=file.ReadLine()
+    .Q:line=""
+    .I line[":" S mode=$P(line,":",1) 
+    .I line["-" S mode=$P(line," ",1) 
+    .I mode="seeds" D READSEEDS(TASK,line)  Q
+    .I mode["-to-" D READINDEX(mode,line)
+    Q
+
+READSEEDS(TASK,line) ;Reads in the seeds to follow through
+    N i,seed,count
+    S line=$P(line,": ",2)  ;Only want to handle numbers
+    
+    I TASK=1 D  Q
+    .F i=1:1:$L(line," ") D
+    ..s seed=$P(line," ",i) q:seed=""
+    ..s data("seeds",seed)=1
+    
+    I TASK=2 D  Q
+    .F i=1:2:$L(line," ") D 
+    ..s seed=$P(line," ",i) q:seed=""
+    ..s count=$P(line," ",(i+1))
+    ..s data("seeds",seed)=count
+    b
+    Q
+
+READINDEX(mode,line) ;Reads in the map
+    n msource,mdest,mrange,i
+    q:mode="seeds"
+    ;Stores rule order, since it's in transform order in the raw data
+    i line["-to-" D  Q
+    .s i=$I(data("order"))
+    .s data("order",i)=mode
+    ;Build map ranges
+    s mdest=$P(line," ",1)
+    s msource=$P(line," ",2)
+    s mrange=$P(line," ",3)
+    ;Store the low bound, the destination root and how high to range. 
+    s data(mode,msource)=mdest_"`"_mrange 
+    Q
+
+TASK1(TEST)  ;TASK1, but TASK2 looked so similar....at first.
+    N filename,data,seed,map,m,lloc,ts,te,stseed,count
+    S lloc="",TASK=1
+    S ts=$P($ZTS,",",2) ;Time started
+    S filename="/external/AOC23-05-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(TASK,filename,.data)
+    N seed,m,map,result
+    S stseed="" F  S stseed=$O(data("seeds",stseed)) q:stseed=""  D
+    . S count=data("seeds",stseed)-1
+    . F seed=stseed:1:stseed+count D
+    .. S result=seed
+    .. W:TEST "Running for seed "_seed,!
+    .. F m=1:1:data("order") D
+    ... S map=data("order",m)
+    ... S result=$$MAPENTRY(map,result)
+    ... W:TEST ?10,map_": ",result,!
+    .. S lloc=$S(lloc="":result,result<lloc:result,1:lloc)
+    S te=$P($ZTS,",",2) ;Time ended
+    W "Lowest location number is "_lloc_" in "_(te-ts)_" seconds",!
+    Q
+
+TASK2
+    N filename,data,seed,map,m,lloc,ts,te,stseed,count
+    S lloc="",TASK=1
+    S ts=$P($ZTS,",",2) ;Time started
+    S filename="/external/AOC23-05-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(TASK,filename,.data)
+    ;More stuff to follow
+    Q 
+    
+MAPENTRY(map,start,mrange) ;Passes a number through a map, evaluating ranges
+    N mthres,mdest                      ;Note: mrange passed ByRef for task 2
+    S mrange=+$G(mrange)                ;Default mrange otherwise
+    S mthres=start+1                    ;start+1 to handle [start]=[lower bound] when ordering to previous
+    S mthres=$O(data(map,mthres),-1)    ;Order previous (i.e. get previous boundary)
+    I mthres="" Q start                 ;Check low bound, quit when no map range is this low
+    S mrange=$P(data(map,mthres),"`",2) ;Grab high bound for checking
+    I (mthres-1+mrange)<start Q start   ;Check high bound, quit when no map range is this high
+    S mdest=$P(data(map,mthres),"`",1)  ;Get destination map start point at boundary
+    Q (start-mthres)+mdest              ;Remap input to destination output
