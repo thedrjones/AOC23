@@ -1,0 +1,91 @@
+ROUTINE AOC2307 [Type=INT]
+AOC2307 ;Advent of Code 2023 - Day 7
+
+LOAD(filename,data)
+    N file,sc
+    S file=##class(%File).%New(filename)
+    S sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .N line,i
+    .S line=file.ReadLine()
+    .Q:line=""
+    .S i=$I(data)
+    .S data(i)=line
+    Q
+
+TASK(TASK,TEST) 
+    N filename,data,total,i,ts,te
+    S ts=$P($ZTS,",",2)
+    S filename="/external/AOC23-07-"_$S(TEST:"T1",1:"A")_".txt"
+    D LOAD(filename,.data)
+    F i=1:1:data D EVALHAND(i,TASK)
+    S total=$$CALCSET
+    W "Sum is "_total_" "_$S(total<249367975:"too low",1:"")
+    S te=$P($ZTS,",",2) W " in "_(te-ts)_" seconds",!
+    B 
+    Q
+
+CALCSET()
+    N rank,sum,type,sortkey
+    S (rank,sum)=0
+    S (type,sortkey)=""
+    F  S type=$O(data("handrank",type)) Q:type=""  D
+    .F  S sortkey=$O(data("handrank",type,sortkey),1,hd) Q:sortkey=""  D
+    ..N bid S bid=$P(hd,"`",3)
+    ..S rank=rank+1
+    ..S sum=sum+(bid*rank)
+    Q sum
+
+EVALHAND(i,task)
+    N x,sortkey,cards
+    S cards=$P(data(i)," ")
+    ;First, lets do some conveinient (possibly magic) ordering abuse
+    S:task=1 sortkey=$TR(cards,"23456789TJQKA","bcdefghijklmn")
+    S:task=2 sortkey=$TR(cards,"J23456789TQKA","bcdefghijklmn") ;Joker goes first, no Jack
+    F x=1:1:5 D ;Now count the cards in the hand
+    .S card=$$CARD($E(cards,x),task)
+    .S data(i,"ccount",+card)=$G(data(i,"ccount",+card))+1
+    N type,v S type=0,v="" 
+    ;Now work out what the hand type is  
+    F  S v=$O(data(i,"ccount",v),-1,vc) Q:v=""  D
+    .I v>0 D    ;Standard Deck
+    ..I vc=5,type<7 S type=7 ;Five of a kind
+    ..I vc=4,type<6 S type=6 ;Four of a kind
+    ..I vc=3,type=2 S type=5 ;Full house (via 3+2)
+    ..I vc=2,type=4 S type=5 ;Full house (via 2+3)
+    ..I vc=3,type<4 S type=4 ;Three of a kind
+    ..I vc=2,type=2 S type=3 ;Two pair
+    ..I vc=2,type<2 S type=2 ;One pair
+    ..I vc=1,type<1 S type=1 ;High card
+    .I v=0 D    ;With Jack as Wild (task 2)
+    ..;Retrospectively could have added jack count on highest card count!
+    ..;Five of a kind promotion
+    ..I vc=5,type=0 S type=7 ; JJJJJ
+    ..I vc=4,type=1 S type=7 ; KJJJJ
+    ..I vc=3,type=2 S type=7 ; KKJJJ
+    ..I vc=2,type=4 S type=7 ; KKKJJ
+    ..I vc=1,type=6 S type=7 ; KKKKJ
+    ..;Four of a kind promotion
+    ..I vc=3,type=1 S type=6 ; AKJJJ   
+    ..I vc=2,type=2 S type=6 ; AKKJJ
+    ..I vc=1,type=4 S type=6 ; AKKKJ
+    ..;Full house promotion
+    ..I vc=2,type=2 S type=5 ; 885JJ
+    ..I vc=1,type=3 S type=5 ; AAKKJ
+    ..;Three of a kind promotion
+    ..I vc=2,type=1 S type=4 ; AKQJJ
+    ..I vc=1,type=2 S type=4 ; AKQQJ
+    ..I vc=1,type=3 S type=4 ; J3QQ3
+    ..;Pair promotion from high card
+    ..I vc=1,type<2 S type=2 ; AKQTJ
+    S data(i,"eval")=type_","""_sortkey_""""
+    S data("handrank",type,sortkey)=i_"`"_cards_"`"_$P(data(i)," ",2)
+    I task=2,cards["J" D 
+    .w i,?6,type,?10,sortkey,?20,cards,?30
+    .w "Matches: "_$S(type=7:5,type=6:4,type=4:3,type=2:2,type=5:"FH",1:"uncaught"),!
+    ;B:task=2&(cards["J") ;zw data(i)
+    Q
+
+CARD(tc,task)    ;Card and value combo, set so +$$CARD will be the number associated
+    Q:task=1 $S(tc="A":14,tc="K":13,tc="Q":12,tc="J":11,tc="T":10,1:tc)_"`"_tc
+    Q:task=2 $S(tc="J":0,tc="A":14,tc="K":13,tc="Q":12,tc="T":10,1:tc)_"`"_tc
