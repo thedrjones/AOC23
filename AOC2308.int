@@ -1,0 +1,71 @@
+ROUTINE AOC2308 [Type=INT]
+AOC2308 ;Advent of Code 2023 - Day 8
+
+LOAD(task,filename,data)
+    N file,sc,i
+    S file=##class(%File).%New(filename),i=0
+    S sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .N line S line=file.ReadLine(),i=i+1
+    .Q:line=""
+    .I i=1 s data("path")=line,data("plen")=$L(line) Q
+    .N node,lnode,rnode
+    .S node=$ZSTRIP($P(line,"="),"<>W")
+    .S lnode=$ZSTRIP($P($P(line,"(",2),","),"<>W")
+    .S rnode=$ZSTRIP($P($P(line,",",2),")"),"<>W")
+    .S data("nodes",node,"L")=lnode
+    .S data("nodes",node,"R")=rnode
+    .I task=2,$E(node,$L(node))="A" S data("nodesA",$I(data("nodesA")))=node
+    .I task=2,$E(node,$L(node))="Z" S data("nodesZ",$I(data("nodesZ")))=node
+    Q
+
+TASK1(TEST) 
+    N filename,data,total,i,ts,te
+    S ts=$P($ZTS,",",2)
+    S filename="/external/AOC23-08-"_$S(TEST>0:"T"_TEST,1:"A")_".txt"
+    D LOAD(1,filename,.data)
+    N stepcount ;s stepcount=0
+    N node S node="AAA"
+    N plen S plen=data("plen")
+    F stepcount=1:1 Q:node="ZZZ"  D
+    .N t S t=$S((stepcount#plen)=0:plen,1:(stepcount#plen))
+    .W:TEST "Step:"_$J(stepcount,4)," Node:"_node,?20,"Target:"_t
+    .N inst S inst=$E(data("path"),t)
+    .W:TEST ?30,"Inst: "_inst
+    .S node=data("nodes",node,inst)
+    .W:TEST ?40,"Target Node: "_node,!
+    W "Found ZZZ in "_(stepcount-1)_" steps",!
+    Q
+
+TASK2(TEST) 
+    N filename,data,ts,te
+    S ts=$P($ZTS,",",2)
+    S filename="/external/AOC23-08-"_$S(TEST>0:"T"_TEST,1:"A")_".txt"
+    D LOAD(2,filename,.data)
+    N stepcount
+    N nodes M nodes=data("nodesA")
+    N plen S plen=data("plen")
+    N allZdone S allZdone=0
+    F stepcount=1:1 Q:allZdone=nodes  D
+    .N t S t=$S((stepcount#plen)=0:plen,1:(stepcount#plen))
+    .N inst S inst=$E(data("path"),t)
+    .W:TEST "Step:"_$J(stepcount,10),?20,"Target Instruction:"_$J(t,3)_", Inst: "_inst,!
+    .F n=1:1:nodes D
+    ..N node S node=nodes(n)
+    ..S nodes(n)=data("nodes",node,inst)
+    ..W:TEST ?20,"Node #"_n_" "_node_", Target Node: "_nodes(n),!
+    ..I $E(nodes(n),$L(nodes(n)))'="Z" Q
+    ..;Do any interesting things happen when you get to a "Z" node?
+    ..W "Ghost "_n_" has reached "_nodes(n),?25,"Target Instruction: "_t_", loop "_(stepcount\plen)_", step "_stepcount,!
+    ..S data("Z",n)=stepcount_"`"_nodes(n)_"`"_(stepcount\plen)
+    ..S allZdone=allZdone+1
+    ..;Data showed that the Z node we end on will always be the same node, it also
+    ..; always doubled each time, so that makes things a little easier.
+    ..;All landing on Z happens at the end of the instructions line, however many steps it takes.
+    N prod S prod=plen
+    F n=1:1:nodes D 
+    .S prod=$P(data("Z",n),"`",3)*prod
+    .W "Ghost "_n_" needs "_(+data("Z",n))_" to reach "_$P(data("Z",n),"`",2)_" at loop "_$P(data("Z",n),"`",3),!
+    W "Using instruction count and number of loops to reach xxZ, the count is "_prod_" [Len: "_$L(prod)_"]",!
+    S te=$P($ZTS,",",2) W "Time taken was "_(te-ts)_" seconds",!
+    Q
