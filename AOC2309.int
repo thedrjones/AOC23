@@ -1,0 +1,74 @@
+ROUTINE AOC2309 [Type=INT]
+AOC2309 ; Advent of Code 2023 - Day 9
+
+LOAD(filename,data)
+    n file,sc
+    s file=##class(%File).%New(filename)
+    s sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    .N i S i=$I(data)
+    .N line S line=file.ReadLine()
+    .Q:line=""
+    .F p=1:1:$L(line," ") S data(i,1,p)=$P(line," ",p)
+    .Q
+    Q
+
+TASK(TASK,TEST)
+    N filename,data,line,resp
+    S filename="/external/AOC23-09-"_$S(TEST:"T"_TEST,1:"A")_".txt"
+    D LOAD(filename,.data)
+    N sum S sum=0
+    F i=1:1:$O(data(""),-1) D
+    .N done s done=0
+    .N depth S depth=0
+    .F  Q:done  D
+    ..s depth=depth+1
+    ..s done=$$SEQSOLVE(i,depth)
+    .s:TASK=1 sum=sum+$$NEXTNUM(i)
+    .s:TASK=2 sum=sum+$$PREVNUM(i)
+    .d:TEST PRINTARR(i)
+    w "Sum of "_$S(TASK=1:"next",1:"previous")_" numbers is: "_sum
+    Q
+
+SEQSOLVE(i,depth)
+    N lastN S lastN=$O(data(i,depth,""),-1)
+    N check S check=0
+    F pos=lastN:-1:2 D
+    .N diff S diff=(data(i,depth,pos))-(data(i,depth,(pos-1)))
+    .S data(i,depth+1,pos-1)=diff
+    .S check=check_diff ;We should only have zero's on this line (summing each number together is deliberately broken on lines 80 and 181)
+    Q $TR(check,"0","")=""
+
+PRINTARR(i) ;Helpful to visualise at times!
+    W !
+    F depth=1:1 Q:'$D(data(i,depth))  D
+    .W depth_":",?(depth*2)+1
+    .F n=$S(TASK=2:0,1:1):1:$O(data(i,depth,""),-1) D
+    ..W $J(data(i,depth,n),10)
+    .W !
+    W !
+    Q
+
+NEXTNUM(i)
+    W:TEST "Solving "_i,!
+    N depth S depth=$O(data(i,""),-1)
+    N lastn S lastn=0
+    N dx F dx=(depth):-1:1 D
+    .n a,b,val
+    .S lastn=$O(data(i,dx,""),-1)
+    .I dx=depth s (a,b,val)=0 
+    .E  S val=(data(i,dx,lastn))+(data(i,dx+1,lastn))
+    .s data(i,dx,lastn+1)=val
+    .W:TEST ?10,"Depth: "_dx,?20,"Next Value is: "_val,!
+    Q data(i,1,lastn+1)
+
+PREVNUM(i)
+    W:TEST "Solving "_i,!
+    N depth S depth=$O(data(i,""),-1)
+    N dx F dx=(depth):-1:1 D
+    .n a,b,val
+    .I dx=depth s (a,b,val)=0 
+    .E  S val=(data(i,dx,1))-(data(i,dx+1,0))
+    .s data(i,dx,0)=val
+    .W:TEST ?10,"Depth: "_dx,?20,"Prev Value is: "_val,!
+    Q data(i,1,0)
