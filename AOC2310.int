@@ -1,0 +1,102 @@
+ROUTINE AOC2310 [Type=INT]
+AOC2310 ;Advent of Code 2023 - Day 10
+
+LOAD(filename,data)
+    n file,sc
+    s file=##class(%File).%New(filename)
+    s sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    . S i=$I(data)
+    . S data(i)=file.ReadLine()
+    . I data(i)["S" S data("startpos")=i_"`"_($F(data(i),"S")-1)
+    . Q
+    Q
+
+TASK(TASK,TEST)
+    N filename,data,line,sum,done
+    S filename="/external/AOC23-10-"_$S(TEST:"T"_TEST,1:"A")_".txt"
+    D LOAD(filename,.data)
+    S (sum,done)=0
+    N from,x,y
+    D GETSTART
+    F  Q:done  D
+    .S newPos=$$TRANS(from,x,y)
+    .S sum=sum+1
+    .S data("history",x,y)=sum
+    .S data("route",sum)=x_"`"_y
+    .S $E(data(x),y)="X"
+    .I newPos="END" s done=1 Q
+    .I from="S",newPos="N" S x=x-1,from="S" Q
+    .I from="S",newPos="W" S y=y-1,from="E" Q 
+    .I from="S",newPos="E" S y=y+1,from="W" Q
+    .I from="E",newPos="W" S y=y-1,from="E" Q
+    .I from="E",newPos="N" S x=x-1,from="S" Q
+    .I from="E",newPos="S" S x=x+1,from="N" Q
+    .I from="N",newPos="S" S x=x+1,from="N" Q
+    .I from="N",newPos="W" S y=y-1,from="E" Q 
+    .I from="N",newPos="E" S y=y+1,from="W" Q
+    .I from="W",newPos="E" S y=y+1,from="W" Q
+    .I from="W",newPos="N" S x=x-1,from="S" Q 
+    .I from="W",newPos="S" S x=x+1,from="N" Q
+    D:TASK<2 VISUAL(.data)
+    W "Walked distance of pipe length is "_(sum/2),!
+    ;Still working on task 2! I have a plan but no time at the moment.
+    Q
+
+GETSTART    ;Works out the initial direction to start walking a path.
+    S start=data("startpos")
+    S x=$P(start,"`",1)
+    S y=$P(start,"`",2)
+    N mx s mx=$L(data(1))
+    N my S my=$O(data(""),-1)
+    I x>1,"|7F"[$E(data(x-1),y) S from="S",x=x-1 Q 
+    I y>1,"-LF"[$E(data(x),y-1) S from="E",y=y-1 Q 
+    I x<mx,"-J7"[$E(data(x),y+1) S from="W",y=y+1 Q
+    I y<my,"|LJ"[$E(data(x+1),y) S from="N",x=x+1 Q
+    q
+
+TRANS(from,x,y)  ;Translate an approach from a direction to the direction to turn walker
+    Q:$E(data(x),y)="S" "END"   ; X Start position
+    I from="S" D
+    .I $E(data(x),y)="|" S newPos="N"   ; ║ S <> N link
+    .I $E(data(x),y)="7" S newPos="W"   ; ╗ S <> W link
+    .I $E(data(x),y)="F" S newPos="E"   ; ╔ S <> E link
+    I from="E" D 
+    .I $E(data(x),y)="-" S newPos="W"   ; ═ E <> W link
+    .I $E(data(x),y)="L" S newPos="N"   ; ╚ E <> N link
+    .I $E(data(x),y)="F" S newPos="S"   ; ╔ E <> S link
+    I from="N" D
+    .I $E(data(x),y)="|" S newPos="S"   ; ║ N <> S link
+    .I $E(data(x),y)="L" S newPos="E"   ; ╚ N <> E link
+    .I $E(data(x),y)="J" S newPos="W"   ; ╝ N <> W link
+    I from="W" D 
+    .I $E(data(x),y)="-" S newPos="E"   ; ═ W <> E link
+    .I $E(data(x),y)="J" S newPos="N"   ; ╝ W <> N link
+    .I $E(data(x),y)="7" S newPos="S"   ; ╗ W <> S link
+    Q newPos
+
+
+
+VISUAL(data)
+    W "Start position ("_$TR(data("startpos"),"`",",")_")",!
+    F x=1:1:data D 
+    . F y=1:1:$L(data(x)) D
+    .. W:y=1 !,x,?5
+    .. N char S char=$E(data(x),y)
+    .. W $$GLYPH(char)
+    W !
+    Q 
+
+GLYPH(c)    ;Just for visualisation
+    ;Note, there are only X to Y, no junctions.
+    Q:c="|" $C(9553)   ; ║ N <> S link
+    Q:c="-" $C(9552)   ; ═ E <> W link
+    Q:c="L" $C(9562)   ; ╚ N <> E link
+    Q:c="J" $C(9565)   ; ╝ N <> W link
+    Q:c="7" $C(9559)   ; ╗ S <> W link
+    Q:c="F" $C(9556)   ; ╔ S <> E link
+    Q:c="S" "X"        ; X Start position
+    Q:c="X" $C(9608)   ; █ Solid block for review
+    Q:c="." $C(183)    ; · Ground
+    Q:c="I" $C(9618)   ; ▒ Medium shade for enclosed area
+    Q c

@@ -1,0 +1,80 @@
+ROUTINE AOC2311 [Type=INT]
+AOC2311 ;Advent of Code 2023 - Day 11
+
+LOAD(filename,data)
+    n file,sc
+    s file=##class(%File).%New(filename)
+    s sc=file.Open("RS")
+    F  Q:file.AtEnd  D
+    . S line=file.ReadLine()
+    . Q:line=""
+    . S i=$I(data)
+    . S data(i)=line 
+    Q
+
+TASK(TASK,TEST)
+    N filename,data,line,sum,done
+    S filename="/external/AOC23-11-"_$S(TEST:"T"_TEST,1:"A")_".txt"
+    D LOAD(filename,.data)
+    S sum=0
+    D EXPMAP
+    D GALFIND
+    D GALLINK
+    N galaxy S galaxy=""
+    F  S galaxy=$O(data("galaxy",galaxy)) q:galaxy=""  D ROUTES(galaxy,$S(TASK=2:1000000,1:2))
+    W "Sum of all routes: "_sum,!
+    Q
+
+EXPMAP
+    F x=1:1:data D 
+    .I $TR(data(x),".")="" S data("expX",x)=""
+    F y=1:1:$L(data(x)) D 
+    .F x=1:1:data S $E(test,x)=$E(data(x),y)
+    .I $TR(test,".")="" S data("expY",y)=""
+    Q
+
+GALFIND
+    F x=1:1:data D
+    .F y=1:1:$L(data(x)) D
+    ..Q:$E(data(x),y)="." 
+    ..S next=$I(data("galaxy"))
+    ..S data("galaxy",next)=x_"`"_y
+    Q 
+
+GALLINK ;Prepare links for a to b
+    N pairs S pairs=0
+    F a=1:1:data("galaxy") D
+    .F b=1:1:data("galaxy") D
+    ..Q:a=b                     ;you can't route to same galaxy
+    ..Q:$D(data("route",b,a))   ;we already have inverse route
+    ..S pairs=pairs+1
+    ..S data("route",a,b)=pairs
+    S data("route")=pairs
+    Q 
+
+ROUTES(a,factor)
+    N b S b=""
+    F  S b=$O(data("route",a,b)) q:b=""  D ROUTE(a,b,factor)
+    q
+
+ROUTE(a,b,factor)
+    ;Get origin position
+    N x1 S x1=$P(data("galaxy",a),"`",1)
+    N y1 S y1=$P(data("galaxy",a),"`",2)
+    W:TEST "From: "_a_" ["_x1_","_y1_"] "
+    ;Get destination postiion
+    N x2 S x2=$P(data("galaxy",b),"`",1)
+    N y2 S y2=$P(data("galaxy",b),"`",2)
+    W:TEST "To: "_b_" ["_x2_","_y2_"] "
+    ;Is it a forward (+1) or backward (-1) direction?
+    N xd S xd=$S(x2>x1:1,x2<x1:-1,1:0) 
+    N yd S yd=$S(y2>y1:1,y2<y1:-1,1:0)
+    W:TEST " direction [X:"_xd_", Y:"_yd_"]"
+    ;Work out actual steps required, only needed if we are moving
+    ;in that direction. Note that the first move is free. 
+    N xdiff,ydiff S (xdiff,ydiff)=0
+    I xd'=0 f xs=(x1+xd):xd:x2 S xdiff=xdiff+$S($D(data("expX",xs)):factor,1:1)
+    I yd'=0 f ys=(y1+yd):yd:y2 S ydiff=ydiff+$S($D(data("expY",ys)):factor,1:1)
+    S sum=sum+(xdiff+ydiff)
+    W:TEST " difference [X:"_xdiff_", Y:"_ydiff_", F:"_factor_"] sum "_(xdiff+ydiff),!
+    Q
